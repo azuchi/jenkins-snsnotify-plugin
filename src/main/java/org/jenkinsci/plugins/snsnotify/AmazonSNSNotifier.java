@@ -35,12 +35,14 @@ public class AmazonSNSNotifier extends Notifier {
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-
-        if (build.getResult() == Result.FAILURE || build.getResult() == Result.UNSTABLE) {
+        if (build.getResult() == Result.FAILURE || build.getResult() == Result.UNSTABLE ||
+                (build.getResult() == Result.SUCCESS && build.getPreviousBuild() != null &&
+                        build.getPreviousBuild().getResult() != Result.SUCCESS)) {
 
             String awsAccessKey = getDescriptor().getAwsAccessKey();
             String awsSecretKey = getDescriptor().getAwsSecretKey();
-            String publishTopic = isEmpty(projectTopicArn) ? 
+            String awsEndpoint = getDescriptor().getAwsEndpoint();
+            String publishTopic = isEmpty(projectTopicArn) ?
                 getDescriptor().getDefaultTopicArn() : projectTopicArn;
 
             if (isEmpty(publishTopic)) {
@@ -56,7 +58,7 @@ public class AmazonSNSNotifier extends Notifier {
             }
 
             String subject = truncate(
-                    String.format("Build %s: %s", 
+                    String.format("Build %s: %s",
                         build.getResult().toString(), build.getFullDisplayName()), 100);
 
             String message = Hudson.getInstance().getRootUrl() == null ?
@@ -65,6 +67,7 @@ public class AmazonSNSNotifier extends Notifier {
 
             AmazonSNSClient snsClient = new AmazonSNSClient(
                     new BasicAWSCredentials(awsAccessKey, awsSecretKey));
+            snsClient.setEndpoint(awsEndpoint);
             try {
                 PublishRequest pubReq = new PublishRequest(publishTopic, message, subject);
                 snsClient.publish(pubReq);
@@ -100,6 +103,7 @@ public class AmazonSNSNotifier extends Notifier {
         private String awsAccessKey;
         private String awsSecretKey;
         private String defaultTopicArn;
+        private String awsEndpoint;
 
         public DescriptorImpl() {
             super(AmazonSNSNotifier.class);
@@ -121,7 +125,7 @@ public class AmazonSNSNotifier extends Notifier {
             awsAccessKey = formData.getString("awsAccessKey");
             awsSecretKey = formData.getString("awsSecretKey");
             defaultTopicArn = formData.getString("defaultTopicArn");
-
+            awsEndpoint = formData.getString("awsEndpoint");
             save();
             return super.configure(req,formData);
         }
@@ -148,6 +152,14 @@ public class AmazonSNSNotifier extends Notifier {
 
         public void setDefaultTopicArn(String defaultTopicArn) {
             this.defaultTopicArn = defaultTopicArn;
+        }
+
+        public String getAwsEndpoint() {
+            return awsEndpoint;
+        }
+
+        public void setAwsEndpoint(String awsEndpoint) {
+            this.awsEndpoint = awsEndpoint;
         }
     }
 }

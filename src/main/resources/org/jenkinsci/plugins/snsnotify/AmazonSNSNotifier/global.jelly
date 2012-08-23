@@ -17,6 +17,14 @@
             <f:password name="snsnotify.awsSecretKey" />
         </f:entry>
 
+        <f:entry
+            title="AWS Endpoint (ex. http://sns.ap-northeast-1.amazonaws.com)"
+            help="/plugin/snsnotify/help-awsEndpoint.html"
+            field="awsEndpoint">
+
+            <f:textbox name="snsnotify.awsEndpoint" />
+        </f:entry>
+
         <f:entry 
             title="Default notification topic ARN" 
             help="/plugin/snsnotify/help-defaultTopicArn.html"
